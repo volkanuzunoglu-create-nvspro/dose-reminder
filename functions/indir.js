@@ -20,13 +20,13 @@ export async function onRequest(context) {
   const end = formatDate(endDate);
 
   // ICS İçeriği (PRODID kısmına şirket ismini zarifçe ekledim)
-  const icsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Novartis//Dose Reminder//EN\r\nBEGIN:VEVENT\r\nDTSTART:${start}\r\nDTEND:${end}\r\nSUMMARY:Medication Dose Reminder\r\nDESCRIPTION:${title} - It is time to take your next dose.\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:Medication Reminder\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`;
+  const icsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Novartis//Dose Reminder//EN\r\nBEGIN:VEVENT\r\nDTSTART:${start}\r\nDTEND:${end}\r\nSUMMARY:Lyptimzia Doz Hatırlatıcısı\r\nDESCRIPTION:${title} - Sıradaki Lyptimzia dozunuzu alma tarihiniz gelmiştir.\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:Medication Reminder\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`;
 
   // Tarayıcıya "Bu bir sayfa değil, hemen indirilecek bir dosyadır" emrini veriyoruz
   return new Response(icsContent, {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="medication_reminder.ics"',
+      'Content-Disposition': 'attachment; filename="lyptimzia_doz_hatirlaticisi.ics"',
       'Access-Control-Allow-Origin': '*'
     }
   });
