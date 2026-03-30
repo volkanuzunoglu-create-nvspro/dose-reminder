@@ -5,37 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dose Reminder</title>
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; background-color: transparent; }
-        .container { text-align: center; padding: 20px; }
-        .btn { padding: 10px 20px; margin: 10px; cursor: pointer; background-color: #005eb8; color: white; border: none; border-radius: 5px; font-size: 16px; }
-        .btn:hover { background-color: #004a93; }
+        body { font-family: sans-serif; text-align: center; padding: 10% 20px; background-color: #f4f4f9; color: #333; }
+        .card { background: white; padding: 40px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 400px; margin: 0 auto; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #005eb8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #status-icon { font-size: 40px; margin: 20px 0; display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-  <h3 style="color: #333;">Değerli Lyptimzia Kullanıcısı, Kaçıncı Lyptimzia Dozunuzu Oldunuz?</h3>
-  <button type="button" class="btn" onclick="downloadICS('Post-1st Dose Reminder', 3)">İlk Dozu Oldum</button>
-  <button type="button" class="btn" onclick="downloadICS('Post-2nd Dose Reminder', 3)">İki veya Daha Fazla Doz Oldum</button>
-</div>
+    <div class="card">
+        <h2 id="status-title">Preparing your reminder...</h2>
+        <div id="loading-spinner" class="spinner"></div>
+        <div id="status-icon">✅</div>
+        <p id="status-message">Your calendar file (.ics) will download automatically.</p>
+    </div>
 
 <script>
-function downloadICS(title, monthsToAdd) {
-    const today = new Date();
-    const reminderDate = new Date(today.setMonth(today.getMonth() + monthsToAdd));
-    
-    // Saati sabah 09:00'a sabitliyoruz
-    reminderDate.setHours(9, 0, 0, 0);
-    
-    const formatDate = (date) => {
-        return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    // 1. Linkteki parametreyi yakala (Örn: ?doz=1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const doseType = urlParams.get('doz');
+
+    // 2. Parametreye göre dosya içeriğini belirle
+    window.onload = function() {
+        if (doseType === '1' || doseType === '2') {
+            const title = doseType === '1' ? 'Post-1st Dose Reminder' : 'Post-2nd Dose Reminder';
+            
+            // Kullanıcı deneyimi için indirmeyi yarım saniye geciktiriyoruz
+            setTimeout(() => {
+                downloadICS(title, 3);
+            }, 500);
+            
+        } else {
+            // Eğer link hatalıysa veya parametre yoksa uyar
+            document.getElementById('status-title').innerText = "Invalid Link";
+            document.getElementById('loading-spinner').style.display = "none";
+            document.getElementById('status-message').innerText = "Please return to the previous page and click the button again.";
+        }
     };
 
-    const start = formatDate(reminderDate);
-    const endDate = new Date(reminderDate.getTime() + 15 * 60000);
-    const end = formatDate(endDate);
+    function downloadICS(title, monthsToAdd) {
+        const today = new Date(); // Hastanın sayfa açıldığı anki tarihi/saati
+        const reminderDate = new Date(today.setMonth(today.getMonth() + monthsToAdd));
+        
+        // Saati sabah 09:00'a sabitliyoruz
+        reminderDate.setHours(9, 0, 0, 0);
+        
+        const formatDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
 
-    const icsContent = `BEGIN:VCALENDAR
+        const start = formatDate(reminderDate);
+        const endDate = new Date(reminderDate.getTime() + 15 * 60000);
+        const end = formatDate(endDate);
+
+        const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//YourWebsite//Dose Reminder//EN
 BEGIN:VEVENT
@@ -51,15 +75,22 @@ END:VALARM
 END:VEVENT
 END:VCALENDAR`;
 
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'medication_reminder.ics';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'medication_reminder.ics';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // İndirme tetiklendikten sonra ekrandaki mesajı başarı mesajına çevir
+        setTimeout(() => {
+            document.getElementById('status-title').innerText = "Download Complete!";
+            document.getElementById('loading-spinner').style.display = "none";
+            document.getElementById('status-icon').style.display = "block";
+            document.getElementById('status-message').innerText = "You can now open the downloaded file to add it to your calendar. You may close this tab.";
+        }, 1000);
+    }
 </script>
 
 </body>
