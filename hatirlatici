@@ -1,95 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dose Reminder</title>
+    <title>LYPTIMZIA Hatırlatma Sistemi</title>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      // Kendi G- kodunuzu buraya da yazın:
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 10% 20px; background-color: #f4f4f9; color: #333; }
-        .card { background: white; padding: 40px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 400px; margin: 0 auto; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #005eb8; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #status-icon { font-size: 40px; margin: 20px 0; display: none; }
+        :root {
+            --primary-purple: #c28db8;
+            --button-green: #2e8b57;
+            --button-blue: #1e607c;
+            --bg-light: #f8f9fa;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-light); color: #333; }
+        .header { background-color: var(--primary-purple); color: black; padding: 20px; text-align: center; border: 1px solid #a37299; margin: 20px; font-weight: bold; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; }
+        
+        #step2 { display: none; } 
+
+        .btn-outline { 
+            display: block; width: 80%; margin: 20px auto; padding: 20px; 
+            background: white; color: black; border: 2px solid var(--button-green); 
+            font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .btn-outline:hover { background: #eef8f1; }
+        .btn-subtext { display: block; font-size: 14px; font-weight: normal; margin-top: 5px; color: #555; }
+
+        .result-box {
+            background: white; border: 2px solid var(--button-green); 
+            padding: 30px 20px; margin: 30px auto; width: 80%; font-size: 20px; font-weight: bold;
+        }
+        .date-display { display: block; margin-top: 15px; font-size: 24px; color: black; }
+
+        .btn-action {
+            display: block; width: 60%; margin: 15px auto; padding: 15px;
+            background: var(--button-blue); color: white; border: none; 
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; text-decoration: none;
+        }
+        .btn-action:hover { background: #15465a; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2 id="status-title">Preparing your reminder...</h2>
-        <div id="loading-spinner" class="spinner"></div>
-        <div id="status-icon">✅</div>
-        <p id="status-message">Your calendar file (.ics) will download automatically.</p>
+    <div class="header">
+        LYPTIMZIA (LDL-Kolesterol Düşürücü Enjeksiyon) Hatırlatma Sistemi
+    </div>
+
+    <div class="container">
+        
+        <div id="step1">
+            <button class="btn-outline" onclick="hesaplaVeGec(3)">
+                Yeni Hasta
+                <span class="btn-subtext">(Bir sonraki doz 3 ay sonra)</span>
+            </button>
+
+            <button class="btn-outline" onclick="hesaplaVeGec(6)">
+                Tedaviye Devam Eden Hasta
+                <span class="btn-subtext">(Bir sonraki doz 6 ay sonra)</span>
+            </button>
+        </div>
+
+        <div id="step2">
+            <div class="result-box">
+                Bir sonraki randevunuz
+                <span class="date-display" id="calculated-date">--</span>
+            </div>
+
+            <button class="btn-action" onclick="icsIndir()">Takvime ekle!</button>
+            <button class="btn-action" onclick="basaDon()" style="background: #444;">Anasayfaya geri dön</button>
+        </div>
+
     </div>
 
 <script>
-    // 1. Linkteki parametreyi yakala (Örn: ?doz=1)
-    const urlParams = new URLSearchParams(window.location.search);
-    const doseType = urlParams.get('doz');
+    let globalTargetDate = null;
+    let globalMonths = 3;
 
-    // 2. Parametreye göre dosya içeriğini belirle
-    window.onload = function() {
-        if (doseType === '1' || doseType === '2') {
-            const title = doseType === '1' ? 'Post-1st Dose Reminder' : 'Post-2nd Dose Reminder';
-            
-            // Kullanıcı deneyimi için indirmeyi yarım saniye geciktiriyoruz
-            setTimeout(() => {
-                downloadICS(title, 3);
-            }, 500);
-            
-        } else {
-            // Eğer link hatalıysa veya parametre yoksa uyar
-            document.getElementById('status-title').innerText = "Invalid Link";
-            document.getElementById('loading-spinner').style.display = "none";
-            document.getElementById('status-message').innerText = "Please return to the previous page and click the button again.";
+    function hesaplaVeGec(ay) {
+        globalMonths = ay;
+        const bugun = new Date();
+        globalTargetDate = new Date(bugun.setMonth(bugun.getMonth() + ay));
+        
+        const secenekler = { day: 'numeric', month: 'long', year: 'numeric' };
+        document.getElementById('calculated-date').innerText = globalTargetDate.toLocaleDateString('tr-TR', secenekler);
+
+        // --- GOOGLE ANALYTICS: TIKLAMA TAKİBİ ---
+        if (typeof gtag === 'function') {
+            const hastaTipi = (ay === 3) ? 'Yeni_Hasta_3_Ay' : 'Mevcut_Hasta_6_Ay';
+            gtag('event', 'doz_secimi', {
+                'hasta_kategorisi': hastaTipi
+            });
         }
-    };
+        // ----------------------------------------
 
-    function downloadICS(title, monthsToAdd) {
-        const today = new Date(); // Hastanın sayfa açıldığı anki tarihi/saati
-        const reminderDate = new Date(today.setMonth(today.getMonth() + monthsToAdd));
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+    }
+
+    function basaDon() {
+        document.getElementById('step2').style.display = 'none';
+        document.getElementById('step1').style.display = 'block';
+    }
+
+    function icsIndir() {
         
-        // Saati sabah 09:00'a sabitliyoruz
-        reminderDate.setHours(9, 0, 0, 0);
-        
-        const formatDate = (date) => {
-            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        // --- GOOGLE ANALYTICS: İNDİRME TAKİBİ (DÖNÜŞÜM) ---
+        if (typeof gtag === 'function') {
+            gtag('event', 'takvime_ekle_tiklama', {
+                'eklenen_doz_turu': (globalMonths === 3) ? '3_Aylik' : '6_Aylik'
+            });
+        }
+        // --------------------------------------------------
+
+        const asilTarih = new Date(globalTargetDate);
+        asilTarih.setHours(9, 0, 0, 0);
+
+        const hatirlaticiTarih = new Date(asilTarih);
+        hatirlaticiTarih.setDate(hatirlaticiTarih.getDate() - 7);
+
+        const formatla = (date) => {
+            const pad = (n) => n < 10 ? '0' + n : n;
+            return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
         };
 
-        const start = formatDate(reminderDate);
-        const endDate = new Date(reminderDate.getTime() + 15 * 60000);
-        const end = formatDate(endDate);
+        const asilBaslangic = formatla(asilTarih);
+        const asilBitis = formatla(new Date(asilTarih.getTime() + 30 * 60000));
 
-        const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//YourWebsite//Dose Reminder//EN
-BEGIN:VEVENT
-DTSTART:${start}
-DTEND:${end}
-SUMMARY:Medication Dose Reminder
-DESCRIPTION:${title} - It is time to take your next dose.
-BEGIN:VALARM
-TRIGGER:-PT15M
-ACTION:DISPLAY
-DESCRIPTION:Medication Reminder
-END:VALARM
-END:VEVENT
-END:VCALENDAR`;
+        const hatirlaticiBaslangic = formatla(hatirlaticiTarih);
+        const hatirlaticiBitis = formatla(new Date(hatirlaticiTarih.getTime() + 15 * 60000));
 
-        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const icsIcerigi = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Novartis//LYPTIMZIA Hatirlatici//TR\r\nBEGIN:VEVENT\r\nDTSTART:${asilBaslangic}\r\nDTEND:${asilBitis}\r\nSUMMARY:LYPTIMZIA Enjeksiyon Günü\r\nDESCRIPTION:Bugün LDL-Kolesterol düşürücü enjeksiyon (LYPTIMZIA) doz gününüz. Lütfen randevunuzu planlayın.\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:Enjeksiyon Hatırlatması\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nDTSTART:${hatirlaticiBaslangic}\r\nDTEND:${hatirlaticiBitis}\r\nSUMMARY:Hatırlatma 1: LYPTIMZIA Enjeksiyonuna 1 Hafta Kaldı\r\nDESCRIPTION:Gelecek hafta bugün LYPTIMZIA enjeksiyon gününüz. Şimdiden randevunuzu oluşturmayı unutmayın.\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:1 Hafta Öncesi Hatırlatması\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR`;
+
+        const blob = new Blob([icsIcerigi], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
-        link.download = 'medication_reminder.ics';
+        link.download = 'Lyptimzia_Hatirlatici.ics';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        // İndirme tetiklendikten sonra ekrandaki mesajı başarı mesajına çevir
-        setTimeout(() => {
-            document.getElementById('status-title').innerText = "Download Complete!";
-            document.getElementById('loading-spinner').style.display = "none";
-            document.getElementById('status-icon').style.display = "block";
-            document.getElementById('status-message').innerText = "You can now open the downloaded file to add it to your calendar. You may close this tab.";
-        }, 1000);
     }
 </script>
 
